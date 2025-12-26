@@ -53,7 +53,7 @@ skill-name/
 │   │   └── description: (필수)
 │   └── 마크다운 지침 (필수)
 └── 번들 리소스 (선택)
-    ├── scripts/          - 실행 가능한 코드 (Python/Bash 등)
+    ├── scripts/          - 실행 가능한 코드 (.NET FBA/Bash 등)
     ├── references/       - 필요에 따라 컨텍스트에 로드되도록 의도된 문서
     └── assets/           - 출력에 사용되는 파일 (템플릿, 아이콘, 폰트 등)
 ```
@@ -69,10 +69,29 @@ skill-name/
 
 ##### 스크립트 (`scripts/`)
 
-결정론적 신뢰성이 필요하거나 반복적으로 재작성되는 작업을 위한 실행 가능한 코드(Python/Bash 등).
+결정론적 신뢰성이 필요하거나 반복적으로 재작성되는 작업을 위한 실행 가능한 코드(.NET FBA/Bash 등).
+
+스크립트는 [.NET 10 File-Based Apps (FBA)](https://learn.microsoft.com/en-us/dotnet/core/sdk/file-based-apps)를 사용하여 작성합니다. FBA는 단일 C# 파일에서 프로젝트 파일 없이 .NET 애플리케이션을 빌드, 실행, 게시할 수 있게 해주는 경량 방식입니다.
+
+**FBA 주요 특징:**
+- 단일 `.cs` 파일로 실행 가능 (`dotnet run script.cs`)
+- `#:package` 지시문으로 NuGet 패키지 참조 가능
+- `#:property` 지시문으로 MSBuild 속성 설정 가능
+- 기본적으로 Native AOT 게시 비활성화
+
+**FBA 예시:**
+```csharp
+#!/usr/bin/env dotnet
+#:package Newtonsoft.Json
+
+using Newtonsoft.Json;
+
+var obj = new { Name = "Example", Value = 42 };
+Console.WriteLine(JsonConvert.SerializeObject(obj));
+```
 
 - **포함 시기**: 동일한 코드가 반복적으로 재작성되거나 결정론적 신뢰성이 필요할 때
-- **예시**: PDF 회전 작업을 위한 `scripts/rotate_pdf.py`
+- **예시**: PDF 회전 작업을 위한 `scripts/RotatePdf.cs`
 - **장점**: 토큰 효율적, 결정론적, 컨텍스트에 로드하지 않고 실행 가능
 - **참고**: 스크립트는 패치나 환경별 조정을 위해 Claude가 읽어야 할 수도 있습니다
 
@@ -202,9 +221,9 @@ Claude는 사용자가 해당 기능을 필요로 할 때만 REDLINING.md 또는
 
 1. 구체적인 예시로 스킬 이해하기
 2. 재사용 가능한 스킬 콘텐츠 계획하기 (스크립트, 참조, 에셋)
-3. 스킬 초기화하기 (init_skill.py 실행)
+3. 스킬 초기화하기 (init-skill.cs 실행)
 4. 스킬 편집하기 (리소스 구현 및 SKILL.md 작성)
-5. 스킬 패키징하기 (package_skill.py 실행)
+5. 스킬 패키징하기 (package-skill.cs 실행)
 6. 실제 사용 기반으로 반복하기
 
 이 단계를 순서대로 따르되, 해당되지 않는 명확한 이유가 있는 경우에만 건너뛰세요.
@@ -236,7 +255,7 @@ Claude는 사용자가 해당 기능을 필요로 할 때만 REDLINING.md 또는
 예시: "이 PDF를 회전하는 것을 도와주세요"와 같은 쿼리를 처리하기 위해 `pdf-editor` 스킬을 구축할 때 분석 결과:
 
 1. PDF를 회전하려면 매번 동일한 코드를 다시 작성해야 함
-2. 스킬에 저장할 `scripts/rotate_pdf.py` 스크립트가 도움이 될 것임
+2. 스킬에 저장할 `scripts/RotatePdf.cs` .NET FBA 스크립트가 도움이 될 것임
 
 예시: "할 일 앱을 만들어주세요" 또는 "걸음 수를 추적하는 대시보드를 만들어주세요"와 같은 쿼리를 위한 `frontend-webapp-builder` 스킬을 설계할 때 분석 결과:
 
@@ -256,12 +275,12 @@ Claude는 사용자가 해당 기능을 필요로 할 때만 REDLINING.md 또는
 
 개발 중인 스킬이 이미 존재하고 반복이나 패키징이 필요한 경우에만 이 단계를 건너뛰세요. 이 경우 다음 단계로 계속하세요.
 
-처음부터 새 스킬을 만들 때는 항상 `init_skill.py` 스크립트를 실행하세요. 이 스크립트는 스킬에 필요한 모든 것을 자동으로 포함하는 새 템플릿 스킬 디렉토리를 편리하게 생성하여 스킬 생성 프로세스를 훨씬 더 효율적이고 신뢰할 수 있게 만듭니다.
+처음부터 새 스킬을 만들 때는 항상 `init-skill` .NET FBA 스크립트를 실행하세요. 이 스크립트는 스킬에 필요한 모든 것을 자동으로 포함하는 새 템플릿 스킬 디렉토리를 편리하게 생성하여 스킬 생성 프로세스를 훨씬 더 효율적이고 신뢰할 수 있게 만듭니다.
 
 사용법:
 
 ```bash
-scripts/init_skill.py <skill-name> --path <output-directory>
+dotnet run scripts/init-skill.cs <skill-name> --path <output-directory>
 ```
 
 스크립트는:
@@ -319,13 +338,13 @@ YAML 프론트매터에 다른 필드를 포함하지 마세요.
 스킬 개발이 완료되면 사용자와 공유할 배포 가능한 .skill 파일로 패키징해야 합니다. 패키징 프로세스는 모든 요구 사항을 충족하는지 확인하기 위해 스킬을 먼저 자동으로 검증합니다:
 
 ```bash
-scripts/package_skill.py <path/to/skill-folder>
+dotnet run scripts/package-skill.cs <path/to/skill-folder>
 ```
 
 선택적 출력 디렉토리 지정:
 
 ```bash
-scripts/package_skill.py <path/to/skill-folder> ./dist
+dotnet run scripts/package-skill.cs <path/to/skill-folder> ./dist
 ```
 
 패키징 스크립트는:
